@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pillguide
+  namespace: pillguide
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: pillguide
+  template:
+    metadata:
+      labels:
+        app: pillguide
+    spec:
+      containers:
+        - name: pillguide
+          image: nginx:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: production
