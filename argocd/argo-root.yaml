@@ -1,3 +1,4 @@
+# 앱 배포 설정
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -11,6 +12,26 @@ spec:
     path: argocd/envs
     directory:
       recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+# ArgoCD 설정
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-infra
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/pillguide/manifest.git
+    targetRevision: HEAD
+    path: argocd/infra
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
