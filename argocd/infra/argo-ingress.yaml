@@ -6,16 +6,14 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   ingressClassName: nginx
   rules:
     - host: pillguide.site
       http:
         paths:
-          - path: /argocd(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path:  /argocd
+            pathType: Prefix
             backend:
               service:
                 name: argocd-server

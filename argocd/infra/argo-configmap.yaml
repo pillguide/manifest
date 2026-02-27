@@ -8,5 +8,5 @@ metadata:
     app.kubernetes.io/part-of: argocd
 data:
   server.insecure: "true"
-  server.rootpath: ""
-  server.basehref: "/lkp/argocd/" # 브라우저 외부 엔드포인트
+  server.rootpath: "/argocd"
+#  server.basehref: "/lkp/argocd/" # 브라우저 외부 엔드포인트
