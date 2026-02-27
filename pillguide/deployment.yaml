@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: pillguide
-          image: wien0128/pillguide-be:143968c
+          image: wien0128/pillguide-be:5cf1e84
           ports:
             - containerPort: 8080
           env:
