@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pillguide-backend
+  namespace: dev
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - dev-api.pillguide.site
+    secretName: cloudflare-origin
+  rules:
+  - host: dev-api.pillguide.site
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: pillguide-backend
+            port:
+              name: http

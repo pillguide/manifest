@@ -1,0 +1,46 @@
+# Inactive example: Argo CD does not scan this directory.
+# Set a real ARM64 image and the correct namespace, then copy into dev/ or production/.
+# Confirm PostgreSQL support and add the app's actual health probes before deploying.
+# SPRING_DATASOURCE_PASSWORD overrides spring.datasource.password in Spring Boot.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pillguide-backend
+  namespace: dev
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pillguide-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pillguide-backend
+    spec:
+      containers:
+      - name: backend
+        image: replace-with-arm64-image:replace-with-tag
+        ports:
+        - name: http
+          containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: pillguide-backend-config
+        env:
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pillguide-backend-db
+              key: password
+        - name: JAVA_TOOL_OPTIONS
+          value: -Xms128m -Xmx512m
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 750m
+            memory: 1Gi
+      automountServiceAccountToken: false

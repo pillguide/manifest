@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: namespace-budget
+  namespace: dev
+spec:
+  hard:
+    pods: '4'
+    requests.cpu: 750m
+    limits.cpu: '1'
+    requests.memory: 1Gi
+    limits.memory: 2Gi

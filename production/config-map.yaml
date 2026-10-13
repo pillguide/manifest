@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pillguide-backend-config
+  namespace: production
+data:
+  SPRING_PROFILES_ACTIVE: production
+  SPRING_DATASOURCE_URL: jdbc:postgresql://pillguide-postgres.c3yoyoeca93s.ap-northeast-2.rds.amazonaws.com:5432/pillguide_production?sslmode=require
+  SPRING_DATASOURCE_USERNAME: pillguide_production_app
+  AWS_REGION: ap-northeast-2
+  PILLGUIDE_S3_BUCKET: pillguide-941904984976-ap-northeast-2-images
+  PILLGUIDE_S3_PREFIX: production/

@@ -1,0 +1,30 @@
+# Bootstrap this root Application once. Preserve this branch while Argo CD tracks it.
+# After merging the PR, change all Git source targetRevision fields to main
+# before deleting the branch. Child Applications intentionally have no cascade finalizer.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pillguide-root
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '0'
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/pillguide/manifest.git
+    targetRevision: codex/pillguide-gitops
+    path: argocd/apps
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - ApplyOutOfSyncOnly=true
+    - PruneLast=true
+    - FailOnSharedResource=true
