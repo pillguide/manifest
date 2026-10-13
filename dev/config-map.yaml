@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pillguide-backend-config
+  namespace: dev
+data:
+  SPRING_PROFILES_ACTIVE: dev
+  SPRING_DATASOURCE_URL: jdbc:postgresql://pillguide-demo-postgres.c3yoyoeca93s.ap-northeast-2.rds.amazonaws.com:5432/pillguide_dev?sslmode=require
+  SPRING_DATASOURCE_USERNAME: pillguide_dev_app
+  AWS_REGION: ap-northeast-2
+  PILLGUIDE_S3_BUCKET: pillguide-demo-941904984976-ap-northeast-2-images
+  PILLGUIDE_S3_PREFIX: dev/
