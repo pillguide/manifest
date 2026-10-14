@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  pillguide-inference.server: |
+    desktop-77j9ol4.taildd6361.ts.net:53 {
+      errors
+      hosts {
+        100.121.91.96 desktop-77j9ol4.taildd6361.ts.net
+        ttl 60
+        no_reverse
+      }
+      cache 30
+    }

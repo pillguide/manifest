@@ -1,0 +1,27 @@
+# Shared DNS configuration; intentionally no cascade finalizer.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-dns
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '0'
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/pillguide/manifest.git
+    targetRevision: main
+    path: platform/coredns
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: false
+      selfHeal: true
+    syncOptions:
+    - ApplyOutOfSyncOnly=true
+    - FailOnSharedResource=true
