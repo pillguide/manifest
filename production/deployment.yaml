@@ -35,9 +35,9 @@ spec:
           timeoutSeconds: 3
           failureThreshold: 3
         env:
-        # One-time bootstrap of the verified-empty production database.
+        # The initial schema exists; production only validates it.
         - name: SPRING_JPA_HIBERNATE_DDL_AUTO
-          value: update
+          value: validate
         - name: SPRING_DATASOURCE_PASSWORD
           valueFrom:
             secretKeyRef:
