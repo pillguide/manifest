@@ -1,4 +1,4 @@
-# Parked until the separate first Spring rollout is approved. CI updates only the image.
+# CI updates the image; replicas are controlled by GitOps.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -25,6 +25,15 @@ spec:
         envFrom:
         - configMapRef:
             name: pillguide-backend-config
+        - secretRef:
+            name: pillguide-backend-runtime
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
         env:
         - name: SPRING_DATASOURCE_PASSWORD
           valueFrom:
