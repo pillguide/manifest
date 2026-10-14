@@ -1,0 +1,43 @@
+# Parked until the separate first Spring rollout is approved. CI updates only the image.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pillguide-backend
+  namespace: dev
+spec:
+  replicas: 0
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pillguide-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pillguide-backend
+    spec:
+      containers:
+      - name: backend
+        image: wien0128/pillguide-be:awaiting-arm64-build
+        ports:
+        - name: http
+          containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: pillguide-backend-config
+        env:
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pillguide-backend-db
+              key: password
+        - name: JAVA_TOOL_OPTIONS
+          value: -Xms128m -Xmx512m
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 750m
+            memory: 1Gi
+      automountServiceAccountToken: false

@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/pillguide/manifest.git
-    targetRevision: codex/pillguide-gitops
+    targetRevision: main
     path: dev
     directory:
       recurse: true

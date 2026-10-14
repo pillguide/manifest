@@ -1,6 +1,5 @@
-# Bootstrap this root Application once. Preserve this branch while Argo CD tracks it.
-# After merging the PR, change all Git source targetRevision fields to main
-# before deleting the branch. Child Applications intentionally have no cascade finalizer.
+# Bootstrap once; all Git Applications track manifest/main.
+# Child Applications intentionally have no cascade finalizer.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -12,7 +11,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/pillguide/manifest.git
-    targetRevision: codex/pillguide-gitops
+    targetRevision: main
     path: argocd/apps
     directory:
       recurse: true
