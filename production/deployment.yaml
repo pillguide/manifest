@@ -5,7 +5,7 @@ metadata:
   name: pillguide-backend
   namespace: production
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
@@ -35,6 +35,9 @@ spec:
           timeoutSeconds: 3
           failureThreshold: 3
         env:
+        # One-time bootstrap of the verified-empty production database.
+        - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+          value: update
         - name: SPRING_DATASOURCE_PASSWORD
           valueFrom:
             secretKeyRef:
