@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: wien0128/pillguide-be:awaiting-arm64-build
+        image: wien0128/pillguide-be@sha256:65daa146e8b3a1495e767020df01248e209bb95ad75de74846b1bc9418f89f4f
         ports:
         - name: http
           containerPort: 8080
