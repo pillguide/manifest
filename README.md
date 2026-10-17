@@ -1,42 +1,66 @@
-# PillGuide GitOps
+# 약학다식 · PillGuide GitOps
 
-Argo CD tracks **main** in this repository. `argocd/root.yaml` is the bootstrap Application; it manages `argocd/apps/`.
+**약학다식**의 EC2 / K3s 클러스터에 적용할 Kubernetes 리소스를 관리합니다. 애플리케이션 소스 저장소가 아니라, Argo CD가 배포 상태의 기준으로 삼는 **선언형 설정 저장소**입니다.
 
-| Backend branch | Manifest on main | Argo CD Application / namespace | API |
-|---|---|---|---|
-| develop | dev/deployment.yaml | dev | https://dev-api.pillguide.site |
-| main | production/deployment.yaml | production | https://api.pillguide.site |
+## 배포 아키텍처
 
-Backend CI publishes a Linux ARM64 image to `wien0128/pillguide-be` and updates only the matching Deployment image by immutable digest. Both environments share this repository's main branch, not separate Git branches.
+```text
+Backend main / develop
+        ↓ GitHub Actions: 검증·빌드·ARM64 이미지 발행
+manifest/main: 환경별 Deployment 이미지 digest 갱신
+        ↓ Argo CD 자동 동기화
+EC2 / K3s: production · dev 네임스페이스
+        ├─ Spring Pod / Service / Ingress
+        ├─ External Secrets → 실행 시 Secret 공급
+        └─ 공통 CoreDNS 설정 → Tailscale 내 로컬 AI 서버 이름 해석
+```
 
-## Spring deployments
+| Backend 브랜치 | 이 저장소의 경로 | 네임스페이스 |
+|---|---|---|
+| `develop` | `dev/` | `dev` |
+| `main` | `production/` | `production` |
 
-Both dev and production currently declare `replicas: 1` and use immutable ARM64 image digests. CI updates image digests, not replica counts.
+두 환경 모두 **이 저장소의 `main`**을 추적합니다. 환경별 Git 브랜치를 나누지 않습니다. Backend CI는 대상 환경의 이미지 digest만 바꾸고, replica 등 배포 정책은 이 저장소에서 관리합니다.
 
-Change desired replica counts in this repository. Do not scale only through kubectl: Argo CD self-healing restores the Git value.
+## 저장소 구조
 
-The older `pillguide/` MySQL and Deployment manifests are retired. The old `codex/pillguide-gitops` branch is retained for history; no Git Application should track it. The external-secrets Helm Application remains pinned to its chart version.
+| 경로 | 역할 |
+|---|---|
+| [argocd/root.yaml](argocd/root.yaml) | 하위 Application을 관리하는 진입점 |
+| [argocd/apps/](argocd/apps/) | dev·production·플랫폼·External Secrets Application |
+| [dev/](dev/), [production/](production/) | Deployment, Service, Ingress, 설정·Secret 참조, 자원 제한 |
+| [platform/argocd/](platform/argocd/) | Argo CD 접근용 Ingress |
+| [platform/coredns/](platform/coredns/) | 두 환경이 공유하는 추론 서버 DNS 설정 |
+| [templates/](templates/) | 배포 참고 템플릿; 현재 Application의 배포 소스가 아님 |
 
-## Shared inference DNS
+## 운영 원칙
 
-`argocd/apps/platform-dns.yaml` manages `platform/coredns/config-map.yaml` in `kube-system`. The root Application discovers this child through its existing recursive `argocd/apps/` source. Keep this shared ConfigMap out of the dev and production directories to avoid duplicate ownership.
+- `main` 변경은 자동 동기화로 실제 클러스터에 반영될 수 있습니다. 반영 전에 환경과 diff를 검토합니다.
+- `selfHeal`이 켜져 있으므로 수동 변경은 Git의 값으로 복구될 수 있습니다. replica 조정과 롤백도 Git 변경으로 수행합니다.
+- 현재 dev·production은 각각 **1 replica / Recreate**로, 배포 중 짧은 중단을 허용합니다.
+- 키·비밀번호는 Secret 관리 경로로 공급합니다. ConfigMap이나 README에 실제 비밀값을 기록하지 않습니다.
+- Git 기반 Application은 `main`을 추적하고 External Secrets Helm 차트는 명시된 버전에 고정합니다.
 
-The ConfigMap uses K3s's existing `/etc/coredns/custom/*.server` import. It maps `desktop-77j9ol4.taildd6361.ts.net` to `100.121.91.96`, with a record TTL of 60 seconds and cache of 30 seconds. It preserves the validated DNS data without replacing K3s's managed Corefile or changing other DNS zones. The existing same-name ConfigMap can be adopted without deleting it first.
+### 공유 DNS 주의사항
 
-Automatic sync and self-healing are enabled; automatic pruning is disabled. The child has no cascade finalizer, matching the other Applications. Removing the child Application manifest from Git lets the root prune the Application while leaving the DNS ConfigMap in place. Removing only the ConfigMap manifest also leaves the live ConfigMap because this child's automatic pruning is disabled. Intentional resource removal requires a separate reviewed operation. Roll back DNS data through Git while the Application is managed, since manual changes would be self-healed.
+`platform-dns`는 K3s의 custom CoreDNS import를 이용하며 관리형 Corefile을 교체하지 않습니다. 추론 서버의 사설 주소가 바뀌면 매핑을 검토해야 합니다. 공유 ConfigMap을 dev·production에 중복 선언하지 않습니다.
 
-This is a static mapping. Update it if the desktop's Tailscale address changes. It does not configure the EC2 Tailscale connection, access policy, desktop Serve process, inference-server startup, or API credentials. Do not put API keys, private keys, or other credentials in these manifests or verification output.
+이 Application은 자동 동기화·self-heal을 사용하지만 **자동 prune은 비활성화**돼 있고 cascade finalizer도 없습니다. Git에서 정의나 Application을 없애도 DNS ConfigMap이 남을 수 있으므로 삭제는 별도 검토가 필요합니다. Tailscale 연결·접근 정책, 데스크톱 서버 실행·자동 시작, API 키는 이 저장소가 설정하지 않습니다.
 
-## Cluster rebuild and verification
+## 적용·검증
 
-1. Restore K3s, Argo CD, repository access, and existing runtime prerequisites through the approved bootstrap procedure. Confirm K3s still mounts `coredns-custom` and imports `*.server` files. Restore EC2 Tailscale connectivity and the approved desktop inference/Serve processes separately.
-2. Bootstrap the root with `kubectl apply -f argocd/root.yaml`. Its existing auto-sync creates the child Applications from main, including `platform-dns`.
-3. Confirm all six Applications are Synced/Healthy: `pillguide-root`, `argocd-config`, `external-secrets`, `platform-dns`, `dev`, and `production`. Check that CoreDNS has loaded the custom mapping. Allow time for the ConfigMap volume update and CoreDNS reload; do not assume a Pod restart is required.
-4. From each actual dev and production backend container, verify the desktop FQDN resolves to `100.121.91.96`, then call authenticated `/health` and a sample `/predict` using the normal HTTPS hostname and certificate validation. Supply credentials through a secure input mechanism, not command arguments or Git. Compare the sample with the saved model H output, using the established absolute tolerance of 0.001.
-5. From both containers, also verify Kubernetes service, AWS, and RDS name resolution and confirm backend/CoreDNS readiness and restart counts are unchanged by DNS adoption.
+K3s·Argo CD·저장소 접근 권한과 Secret 공급 경로가 준비된 승인 환경에서 [root Application](argocd/root.yaml)을 bootstrap합니다. 첫 환경 동기화 전 External Secrets의 준비 상태를 확인합니다.
 
-The child Application uses sync wave 0, but this alone does not guarantee its DNS configuration is ready before other child workloads. Synced/Healthy is not an end-to-end inference check; the Pod-level checks above are the completion criteria.
+검증은 다음 두 단계로 나눕니다.
 
-Merging changes into main can trigger live reconciliation. Local edits or a review branch do not deploy this configuration. Backend code and automatic-start settings are outside this change.
+1. `pillguide-root`, `argocd-config`, `external-secrets`, `platform-dns`, `dev`, `production`의 동기화·상태와 Backend readiness 확인.
+2. 실제 dev·production Backend 컨테이너에서 DNS, TLS 검증을 포함한 인증된 AI `/health`·`/predict`, 기존 서비스·DB 연결 확인.
 
-References: [K3s custom CoreDNS imports](https://docs.k3s.io/advanced#coredns-custom-configuration-imports), [Argo CD automatic sync](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/), [Application health and sync waves](https://argo-cd.readthedocs.io/en/stable/operator-manual/health/).
+**Synced/Healthy 또는 sync wave만으로 실제 통신 성공을 보장하지 않습니다.** 인프라 생성·클러스터 설치·데스크톱 추론 서버 배포는 이 저장소의 범위 밖입니다.
+
+## 연결 문서
+
+- [Backend — 이미지 빌드와 GitOps 전달 과정](https://github.com/pillguide/Backend/blob/develop/docs/gitops.md)
+- [Frontend — Vercel 환경별 라우팅](https://github.com/pillguide/Frontend/blob/main/docs/deployment.md)
+- [AI-server — 추론 API 연동 명세](https://github.com/pillguide/AI-server/blob/main/docs/SPRING_INTEGRATION.md)
+- [Argo CD 자동 동기화](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/) · [K3s custom CoreDNS](https://docs.k3s.io/advanced#coredns-custom-configuration-imports)
