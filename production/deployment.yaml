@@ -35,9 +35,9 @@ spec:
           timeoutSeconds: 3
           failureThreshold: 3
         env:
-        # The initial schema exists; production only validates it.
+        # Temporary during development; switch back to validate when development is complete.
         - name: SPRING_JPA_HIBERNATE_DDL_AUTO
-          value: validate
+          value: update
         - name: SPRING_DATASOURCE_PASSWORD
           valueFrom:
             secretKeyRef:
