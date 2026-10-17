@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: wien0128/pillguide-be@sha256:2b7d28b08726dffedaf0cbccbf2e846dd5085df345748b4874e4bee130f77c06
+        image: wien0128/pillguide-be@sha256:c8f066c7d07c3a1087f2745096f09cc0e1b942d1832ad309c492802de26a4c36
         ports:
         - name: http
           containerPort: 8080
