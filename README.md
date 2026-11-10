@@ -41,6 +41,14 @@ EC2 / K3s: production · dev 네임스페이스
 - 키·비밀번호는 Secret 관리 경로로 공급합니다. ConfigMap이나 README에 실제 비밀값을 기록하지 않습니다.
 - Git 기반 Application은 `main`을 추적하고 External Secrets Helm 차트는 명시된 버전에 고정합니다.
 
+### 개발 환경 FCM
+
+개발 환경은 FCM과 복약 알림 스케줄러를 활성화한다. 자동화 테스트의 `fcm.enabled=false`와는 별개다. `dev/fcm-credentials.yaml`은 SSM SecureString `/pillguide/dev/fcm-service-account`의 전체 서비스 계정 JSON을 별도 Secret `pillguide-backend-fcm`으로 가져온다. 기존 runtime Parameter를 덮어쓰지 않는다.
+
+Deployment는 이를 `/var/run/secrets/firebase/service-account.json`에 읽기 전용으로 연결하며, `FCM_CERTIFICATION=file:/var/run/secrets/firebase/service-account.json`을 사용한다. 인증 JSON은 Git, config 서브모듈, CI Secret 또는 이미지에 넣지 않는다. 파일 권한 `0400`은 현재 이미지의 root 사용자 기준이며, non-root 전환 시 읽기 권한도 함께 조정해야 한다.
+
+처음 연결할 때는 ExternalSecret의 `Ready=True`를 확인한 후 Deployment를 변경한다. 키 교체 시 Secret 동기화 후 개발 Pod를 재시작해야 한다. 파일은 갱신되지만 Spring의 인증 빈은 자동으로 다시 생성되지 않는다. 재시작은 현재 Recreate 정책에 따른 짧은 중단을 동반한다. 실기기 수신 테스트는 별도 작업이며, Firebase `validate_only=true` 검증은 기기로 메시지를 전달하지 않는다.
+
 ### 공유 DNS 주의사항
 
 `platform-dns`는 K3s의 custom CoreDNS import를 이용하며 관리형 Corefile을 교체하지 않습니다. 추론 서버의 사설 주소가 바뀌면 매핑을 검토해야 합니다. 공유 ConfigMap을 dev·production에 중복 선언하지 않습니다.
