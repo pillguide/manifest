@@ -45,6 +45,16 @@ spec:
               key: password
         - name: JAVA_TOOL_OPTIONS
           value: -Xms128m -Xmx512m
+        - name: FCM_ENABLED
+          value: "true"
+        - name: FCM_CERTIFICATION
+          value: file:/var/run/secrets/firebase/service-account.json
+        - name: MEDICATION_NOTIFICATION_ENABLED
+          value: "true"
+        volumeMounts:
+        - name: firebase-credentials
+          mountPath: /var/run/secrets/firebase
+          readOnly: true
         resources:
           requests:
             cpu: 250m
@@ -52,4 +62,12 @@ spec:
           limits:
             cpu: 750m
             memory: 1Gi
+      volumes:
+      - name: firebase-credentials
+        secret:
+          secretName: pillguide-backend-fcm
+          defaultMode: 0400
+          items:
+          - key: service-account.json
+            path: service-account.json
       automountServiceAccountToken: false
